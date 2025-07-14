@@ -1,0 +1,220 @@
+import tkinter as tk
+from tkinter import font
+import math
+
+class ScientificCalculator:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Scientific Calculator")
+        self.root.geometry("420x650")
+        self.root.resizable(False, False)
+        
+        # Calculator state
+        self.angle_mode = 'DEG'
+        self.history = []
+        
+        # Modern color scheme
+        self.bg_color = '#2a2d36'
+        self.entry_bg = '#3c404d'
+        self.entry_fg = '#ffffff'
+        self.button_bg = '#3c404d'
+        self.button_fg = '#ffffff'
+        self.operator_bg = '#5d6bc4'
+        self.function_bg = '#4caf50'
+        self.clear_bg = '#f44336'
+        self.equals_bg = '#2196f3'
+        self.mode_bg = '#ff9800'
+        self.history_bg = '#252833'
+        self.history_fg = '#aaaaaa'
+        
+        # Fonts
+        self.entry_font = font.Font(family='Helvetica', size=24, weight='bold')
+        self.button_font = font.Font(family='Helvetica', size=14)
+        self.history_font = font.Font(family='Helvetica', size=10)
+        self.mode_font = font.Font(family='Helvetica', size=10, weight='bold')
+        
+        self.create_widgets()
+        self.bind_keys()
+        
+    def create_widgets(self):
+        # Main frame
+        main_frame = tk.Frame(self.root, bg=self.bg_color)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # History display
+        self.history_var = tk.StringVar()
+        history_label = tk.Label(main_frame, textvariable=self.history_var, 
+                               font=self.history_font, bg=self.history_bg, fg=self.history_fg,
+                               anchor='e', padx=10, pady=5)
+        history_label.pack(fill=tk.X, pady=(0, 5))
+        
+        # Entry field
+        self.entry_var = tk.StringVar()
+        entry = tk.Entry(main_frame, textvariable=self.entry_var, font=self.entry_font,
+                        bg=self.entry_bg, fg=self.entry_fg, bd=0, insertbackground='white',
+                        justify='right')
+        entry.pack(fill=tk.X, pady=(0, 10), ipady=10)
+        
+        # Mode button frame
+        mode_frame = tk.Frame(main_frame, bg=self.bg_color)
+        mode_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        self.angle_btn = tk.Button(mode_frame, text=self.angle_mode, font=self.mode_font,
+                                 bg=self.mode_bg, fg='white', bd=0, padx=10,
+                                 command=self.toggle_angle_mode)
+        self.angle_btn.pack(side=tk.LEFT)
+        
+        # Calculator buttons
+        self.button_frame = tk.Frame(main_frame, bg=self.bg_color)
+        self.button_frame.pack(fill=tk.BOTH, expand=True)
+        
+        self.create_buttons()
+        
+    def create_buttons(self):
+        buttons = [
+            ('sin', 'cos', 'tan', '(', ')', 'C'),
+            ('π', 'e', 'x²', '√', '^', '⌫'),
+            ('7', '8', '9', '/', 'log', 'ln'),
+            ('4', '5', '6', '*', '10^x', 'e^x'),
+            ('1', '2', '3', '-', 'RAD', 'DEG'),
+            ('0', '.', '±', '+', '!', '=')
+        ]
+        
+        for row in buttons:
+            row_frame = tk.Frame(self.button_frame, bg=self.bg_color)
+            row_frame.pack(fill=tk.BOTH, expand=True)
+            for btn_text in row:
+                self.create_button(row_frame, btn_text)
+    
+    def create_button(self, frame, text):
+        color = self.button_bg
+        if text in '+-*/^':
+            color = self.operator_bg
+        elif text in ('sin', 'cos', 'tan', 'π', 'e', 'log', 'ln', '10^x', 'e^x', '√', 'x²', '!'):
+            color = self.function_bg
+        elif text == 'C':
+            color = self.clear_bg
+        elif text == '=':
+            color = self.equals_bg
+        elif text in ('RAD', 'DEG'):
+            color = self.mode_bg
+        
+        btn = tk.Button(frame, text=text, font=self.button_font, bg=color,
+                       fg=self.button_fg, bd=0, highlightthickness=0,
+                       command=lambda t=text: self.on_button_click(t))
+        btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=2, pady=2)
+        
+        # Hover effect
+        btn.bind("<Enter>", lambda e, b=btn: b.config(bg='#4a4e5a'))
+        btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+    
+    def on_button_click(self, char):
+        current = self.entry_var.get()
+        
+        try:
+            if char == 'C':
+                self.clear()
+            elif char == '⌫':
+                self.backspace()
+            elif char == '=':
+                self.calculate()
+            elif char == '√':
+                self.entry_var.set(current + 'sqrt(')
+            elif char == 'x²':
+                self.entry_var.set(current + '**2')
+            elif char == '^':
+                self.entry_var.set(current + '**')
+            elif char == 'π':
+                self.entry_var.set(current + 'pi')
+            elif char == 'e':
+                self.entry_var.set(current + 'e')
+            elif char == 'e^x':
+                self.entry_var.set(current + 'exp(')
+            elif char == '10^x':
+                self.entry_var.set(current + '10**(')
+            elif char == '!':
+                self.entry_var.set(current + '!')
+            elif char == 'RAD':
+                self.angle_mode = 'RAD'
+                self.angle_btn.config(text='RAD')
+            elif char == 'DEG':
+                self.angle_mode = 'DEG'
+                self.angle_btn.config(text='DEG')
+            elif char == '±':
+                if current.startswith('-'):
+                    self.entry_var.set(current[1:])
+                else:
+                    self.entry_var.set('-' + current)
+            else:
+                self.entry_var.set(current + char)
+        except:
+            self.entry_var.set("Error")
+    
+    def calculate(self):
+        try:
+            expression = self.entry_var.get()
+            expression = expression.replace('^', '**')
+            
+            # Handle factorial
+            if '!' in expression:
+                parts = expression.split('!')
+                if len(parts) == 2 and parts[1] == '':
+                    num = float(parts[0])
+                    if num.is_integer() and num >= 0:
+                        result = math.factorial(int(num))
+                        self.add_to_history(f"{expression} = {result}")
+                        self.entry_var.set(str(result))
+                        return
+            
+            safe_dict = {
+                'sqrt': math.sqrt,
+                'log': math.log10,  # Base 10 logarithm
+                'ln': math.log,      # Natural logarithm
+                'sin': lambda x: math.sin(math.radians(x)) if self.angle_mode == 'DEG' else math.sin(x),
+                'cos': lambda x: math.cos(math.radians(x)) if self.angle_mode == 'DEG' else math.cos(x),
+                'tan': lambda x: math.tan(math.radians(x)) if self.angle_mode == 'DEG' else math.tan(x),
+                'exp': math.exp,
+                'pi': math.pi,
+                'e': math.e,
+                '__builtins__': {}
+            }
+            
+            result = eval(expression, safe_dict)
+            rounded_result = round(result, 10)
+            self.add_to_history(f"{expression} = {rounded_result}")
+            self.entry_var.set(str(rounded_result))
+        except Exception as e:
+            self.entry_var.set("Error")
+    
+    def add_to_history(self, entry):
+        self.history.insert(0, entry)
+        if len(self.history) > 3:
+            self.history.pop()
+        self.history_var.set("\n".join(self.history))
+    
+    def clear(self):
+        self.entry_var.set("")
+    
+    def backspace(self):
+        current = self.entry_var.get()
+        self.entry_var.set(current[:-1])
+    
+    def toggle_angle_mode(self):
+        self.angle_mode = 'RAD' if self.angle_mode == 'DEG' else 'DEG'
+        self.angle_btn.config(text=self.angle_mode)
+    
+    def bind_keys(self):
+        self.root.bind('<Return>', lambda e: self.calculate())
+        self.root.bind('<Escape>', lambda e: self.clear())
+        self.root.bind('<BackSpace>', lambda e: self.backspace())
+        self.root.bind('<Key>', self.key_press)
+    
+    def key_press(self, event):
+        key = event.char
+        if key in '0123456789+-*/().':
+            self.entry_var.set(self.entry_var.get() + key)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ScientificCalculator(root)
+    root.mainloop()
